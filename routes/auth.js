@@ -1,11 +1,9 @@
-
 const express = require("express");
 const router = new express.Router();
 const ExpressError = require("../expressError");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const db = require("../db");
 const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require("../config");
 
 /** POST /login - login: {username, password} => {token}
@@ -14,30 +12,20 @@ const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require("../config");
  *
  **/
 router.post("/login", async function (req, res, next) {
-
-// I think I'm supposed to move this logic to the class
-// I think I'm supposed to move this logic to the class
-// I think I'm supposed to move this logic to the class
-
-    try {
+  try {
     const { username, password } = req.body;
     if (!username || !password) {
       throw new ExpressError("Username and password required", 400);
     }
-    const results = await db.query(
-      `SELECT username, password
-      FROM users 
-      WHERE username = $1`,
-      [username]
-    );
-    const user = results.rows[0]; // returns an object with username, password
-    if (user) {
-      if (await bcrypt.compare(password, user.password)) {
-        const token = jwt.sign({ username }, SECRET_KEY);
-        return res.json({ message: "logged in!", token });
-      }
+    const isValidUser = await User.authenticate(username, password);
+    if (isValidUser) {
+      const token = jwt.sign({ username }, SECRET_KEY);
+      const timestamp = await User.updateLoginTimestamp(username);
+      return res.json({ message: "valid user", new_timestamp: timestamp, token });
     }
-    throw new ExpressError("Invalid username or password", 400);
+    else {
+      throw new ExpressError("Invalid username or password", 400)
+    }
   } catch (e) {
     return next(e);
   }
@@ -61,16 +49,13 @@ router.post("/register", async function (req, res, next) {
       hashedPassword,
       first_name,
       last_name,
-      phone
-  });
+      phone,
+    });
     const token = jwt.sign(user.username, SECRET_KEY);
     return res.json({ message: "registered!", token });
-
   } catch (e) {
     return next(e);
   }
 });
-
-
 
 module.exports = router;

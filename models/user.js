@@ -1,3 +1,5 @@
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const db = require("../db");
 const ExpressError = require("../expressError");
 
@@ -14,9 +16,23 @@ class User {
    *    {username, password, first_name, last_name, phone}
    */
 
-  static async register({ username, hashedPassword, first_name, last_name, phone }) {
+  static async register({
+    username,
+    hashedPassword,
+    first_name,
+    last_name,
+    phone,
+  }) {
     const now = new Date();
-    console.log(username, hashedPassword, first_name, last_name, phone, now, now);
+    console.log(
+      username,
+      hashedPassword,
+      first_name,
+      last_name,
+      phone,
+      now,
+      now
+    );
     const results = await db.query(
       `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)     
        VALUES($1, $2, $3, $4, $5, $6, $7)
@@ -28,17 +44,42 @@ class User {
   }
 
   /** Authenticate: is this username/password valid? Returns boolean. */
-s
-  static async authenticate(username, password) {}
+
+  static async authenticate(username, password) {
+    const results = await db.query(
+      `SELECT username, password
+      FROM users 
+      WHERE username = $1`,
+      [username]
+    );
+    const user = results.rows[0];
+    if (user) {
+      return await bcrypt.compare(password, user.password);
+    }
+  }
 
   /** Update last_login_at for user */
-
-  static async updateLoginTimestamp(username) {}
+  static async updateLoginTimestamp(username) {
+    const now = new Date();
+    const results = await db.query(
+      `UPDATE users 
+      SET last_login_at = $1
+      where username = $2
+      returning last_login_at`, [now, username]
+    );
+    return results.rows[0].last_login_at
+    }
+  
 
   /** All: basic info on all users:
    * [{username, first_name, last_name, phone}, ...] */
 
-  static async all() {}
+  static async all() {
+    const results = await db.query(
+      `select * from users`
+    );
+    return results.rows.map(item => new User(item.username, item.first_name, item.last_name, item.phone))
+  } 
 
   /** Get: get user by username
    *
@@ -49,7 +90,17 @@ s
    *          join_at,
    *          last_login_at } */
 
-  static async get(username) {}
+  static async get(username) {
+    const results = await db.query(
+      `select first_name, last_name, phone, join_at, last_login_at 
+      from users
+      where username = $1`, [username]
+    );
+    if(!results.rows[0]) {
+      return new ExpressError("User Not Found", 404)
+    }
+    return results.rows[0];
+  }
 
   /** Return messages from this user.
    *

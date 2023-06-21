@@ -15,7 +15,7 @@ router.get("/", async function (req, res, next) {
   try {
     const userList = await User.all();
     return res.json({ users: userList });
-  } catch(e) {
+  } catch (e) {
     return next(e);
   }
 });
@@ -27,10 +27,10 @@ router.get("/", async function (req, res, next) {
  **/
 router.get("/:username", async function (req, res, next) {
   try {
-    const user = await User.get(req.params.username)
-    return res.json({user})
-  } catch(e) {
-    return next(e)
+    const user = await User.get(req.params.username);
+    return res.json({ user });
+  } catch (e) {
+    return next(e);
   }
 });
 
@@ -43,6 +43,15 @@ router.get("/:username", async function (req, res, next) {
  *                 from_user: {username, first_name, last_name, phone}}, ...]}
  *
  **/
+router.get("/:username/to", async function (req, res, next) {
+  try {
+    const { username } = req.params;
+    const response = await User.messagesTo(username);
+    return res.json({ messages: response });
+  } catch (e) {
+    return next(e);
+  }
+});
 
 /** GET /:username/from - get messages from user
  *
@@ -53,5 +62,14 @@ router.get("/:username", async function (req, res, next) {
  *                 to_user: {username, first_name, last_name, phone}}, ...]}
  *
  **/
+router.get("/:username/from", async function (req, res, next) {
+  try {
+    const { username } = req.params;
+    const response = await User.messagesFrom(username);
+    return res.json({ messages: response });
+  } catch (e) {
+    return next(e);
+  }
+});
 
 module.exports = router;

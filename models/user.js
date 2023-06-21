@@ -18,7 +18,7 @@ class User {
 
   static async register({
     username,
-    hashedPassword,
+    password,
     first_name,
     last_name,
     phone,
@@ -26,7 +26,7 @@ class User {
     const now = new Date();
     console.log(
       username,
-      hashedPassword,
+      password,
       first_name,
       last_name,
       phone,
@@ -37,10 +37,10 @@ class User {
       `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at)     
        VALUES($1, $2, $3, $4, $5, $6, $7)
        RETURNING username, password, first_name, last_name, phone`,
-      [username, hashedPassword, first_name, last_name, phone, now, now]
+      [username, password, first_name, last_name, phone, now, now]
     );
     console.log(results);
-    return new User(username, hashedPassword, first_name, last_name, phone);
+    return new User(username, password, first_name, last_name, phone);
   }
 
   /** Authenticate: is this username/password valid? Returns boolean. */
@@ -65,21 +65,22 @@ class User {
       `UPDATE users 
       SET last_login_at = $1
       where username = $2
-      returning last_login_at`, [now, username]
+      returning last_login_at`,
+      [now, username]
     );
-    return results.rows[0].last_login_at
-    }
-  
+    return results.rows[0].last_login_at;
+  }
 
   /** All: basic info on all users:
    * [{username, first_name, last_name, phone}, ...] */
 
   static async all() {
-    const results = await db.query(
-      `select * from users`
+    const results = await db.query(`select * from users`);
+    return results.rows.map(
+      (item) =>
+        new User(item.username, item.first_name, item.last_name, item.phone)
     );
-    return results.rows.map(item => new User(item.username, item.first_name, item.last_name, item.phone))
-  } 
+  }
 
   /** Get: get user by username
    *
@@ -94,10 +95,11 @@ class User {
     const results = await db.query(
       `select first_name, last_name, phone, join_at, last_login_at 
       from users
-      where username = $1`, [username]
+      where username = $1`,
+      [username]
     );
-    if(!results.rows[0]) {
-      return new ExpressError("User Not Found", 404)
+    if (!results.rows[0]) {
+      return new ExpressError("User Not Found", 404);
     }
     return results.rows[0];
   }
@@ -110,7 +112,17 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesFrom(username) {}
+  static async messagesFrom(username) {
+    const results = await db.query(
+      `select * from messages
+      where from_username = $1`,
+      [username]
+    );
+    if (!results.rows[0]) {
+      return new ExpressError(`${username} Not Found`, 404);
+    }
+    return results.rows;
+  }
 
   /** Return messages to this user.
    *
@@ -120,7 +132,19 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesTo(username) {}
+  static async messagesTo(username) {
+    const results = await db.query(
+      `select * from messages
+      where to_username = $1`,
+      [username]
+    );
+    if (!results.rows[0]) {
+      return new ExpressError(`${username} Not Found`, 404);
+    }
+    return results.rows;
+  }
+
+
 }
 
 module.exports = User;

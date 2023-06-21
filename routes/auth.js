@@ -39,20 +39,20 @@ router.post("/login", async function (req, res, next) {
  */
 router.post("/register", async function (req, res, next) {
   try {
-    const { username, password, first_name, last_name, phone } = req.body;
+    let { username, password, first_name, last_name, phone } = req.body;
     if (!username || !password) {
       throw new ExpressError("Username and password required", 400);
     }
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+    password = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
     const user = await User.register({
       username,
-      hashedPassword,
+      password,
       first_name,
       last_name,
       phone,
     });
     const token = jwt.sign(user.username, SECRET_KEY);
-    return res.json({ message: "registered!", token });
+    return res.json({token});
   } catch (e) {
     return next(e);
   }

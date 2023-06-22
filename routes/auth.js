@@ -21,7 +21,7 @@ router.post("/login", async function (req, res, next) {
     if (isValidUser) {
       const token = jwt.sign({ username }, SECRET_KEY);
       const timestamp = await User.updateLoginTimestamp(username);
-      return res.json({ message: "valid user", new_timestamp: timestamp, token });
+      return res.json({ token });
     }
     else {
       throw new ExpressError("Invalid username or password", 400)

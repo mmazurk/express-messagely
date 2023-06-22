@@ -4,6 +4,7 @@ const ExpressError = require("../expressError");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { ensureLoggedIn, ensureCorrectUser } = require("../middleware/auth")
 const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require("../config");
 
 /** GET / - get list of users.
@@ -11,7 +12,7 @@ const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require("../config");
  * => {users: [{username, first_name, last_name, phone}, ...]}
  *
  **/
-router.get("/", async function (req, res, next) {
+router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {
     const userList = await User.all();
     return res.json({ users: userList });
@@ -25,7 +26,7 @@ router.get("/", async function (req, res, next) {
  * => {user: {username, first_name, last_name, phone, join_at, last_login_at}}
  *
  **/
-router.get("/:username", async function (req, res, next) {
+router.get("/:username", ensureCorrectUser, async function (req, res, next) {
   try {
     const user = await User.get(req.params.username);
     return res.json({ user });
